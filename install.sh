@@ -65,6 +65,9 @@ cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
 cp "$INSTALL_ROOT/.config-repo/openclaw.json.template" "$INSTALL_ROOT/openclaw.json.template"
 cp "$INSTALL_ROOT/.config-repo/research_results.template.json" "$INSTALL_ROOT/research_results.template.json"
 
+echo "==> bintra-report helper (one-command wrapper for /api/droplet/report)"
+install -m 0755 "$INSTALL_ROOT/.config-repo/bintra-report.sh" /usr/local/bin/bintra-report
+
 echo "==> Rendering openclaw.json"
 mkdir -p "$CONFIG_DIR"
 

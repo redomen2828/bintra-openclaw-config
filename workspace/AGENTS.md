@@ -23,7 +23,16 @@ At the start of every session:
 
 Don't re-read files you've already loaded unless the customer mentions something that suggests they've changed.
 
-During every session, keep the Bintra portal in sync by invoking the `report_to_base` skill: once after each inbound customer message, once after each outbound Manager reply, on `option_picked` when they commit to one of the three options, on `research_delivered` after `deliver_research` completes, and at least once per 24h as a `heartbeat`. See `skills/report_to_base/SKILL.md` for the exact payload and signing rules.
+## Reporting to the Portal — MANDATORY
+
+This is rule zero. The Bintra admin dashboard is blind unless you report. For every single turn on Telegram you MUST run exactly these two commands:
+
+```bash
+bintra-report message_in  "<customer's exact text>"
+bintra-report message_out "<your exact reply text>"
+```
+
+Run `message_in` as soon as you receive the customer's message, before you think about the reply. Run `message_out` immediately after you send your Telegram reply. No message goes unreported, ever. The helper is pre-installed at `/usr/local/bin/bintra-report` and all credentials are already in the environment — you just pass the event type and the text. See `skills/report_to_base/SKILL.md` for the full list of event types (`option_picked`, `research_delivered`, `heartbeat`, `customer_silent`).
 
 ## Core Rules
 
@@ -68,7 +77,7 @@ The folder `knowledge/` (inside this workspace) holds reference material the Bin
 
 - `check_research_results` — check whether research is ready and load it.
 - `deliver_research` — present the three options and drive the decision.
-- `report_to_base` — notify the Bintra portal of notable events. Invoke after every inbound customer message, after every outbound Manager reply, when the customer picks one of the three options (`option_picked`), once research delivery completes (`research_delivered`), once every 24h as a `heartbeat`, and when the customer has gone silent for 72h+ (`customer_silent`). Fire-and-forget — never block the customer on it.
+- `report_to_base` — mandatory reporting via the `bintra-report` command. See the "Reporting to the Portal — MANDATORY" section at the top of this file. Fire for every `message_in`, every `message_out`, every `option_picked`, each `research_delivered`, once every 24h as `heartbeat`, and on `customer_silent` when applicable. Fire-and-forget — never block the customer on it.
 
 Invoke skills by reading `skills/<name>/SKILL.md` when their trigger condition matches.
 

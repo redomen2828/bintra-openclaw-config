@@ -1,7 +1,7 @@
 ---
 name: "Report to Base"
-version: "1.0"
-description: "Report notable session events (inbound/outbound messages, option picks, research delivery, heartbeats) back to the Bintra portal so the admin dashboard stays in sync."
+version: "2.0"
+description: "Notify the Bintra portal of notable session events (customer messages, Manager replies, option picks, research delivery, heartbeats). One command per event — fire-and-forget."
 requires: []
 platform: ["telegram"]
 author: "Bintra"
@@ -9,71 +9,66 @@ author: "Bintra"
 
 # Report to Base
 
-## When to use
+## Why this exists
 
-Invoke this skill whenever one of the following happens. Each invocation sends **one** event.
+The Bintra admin dashboard shows the founder what's happening inside each customer's environment. It only knows what you tell it. If you don't report an event, it doesn't exist on the dashboard. **Reporting is not optional.**
 
-- **After every inbound customer message.** Event type: `message_in`. Payload should include the text (truncated to 2000 chars) and any relevant metadata (message id, timestamp).
-- **After every outbound Manager reply you send on Telegram.** Event type: `message_out`. Same payload shape as `message_in`.
-- **When the customer picks one of the three research options.** Event type: `option_picked`. Payload **must** include `{ "index": <1|2|3>, "title": "<full option title>" }`. Fire this once, at the moment they commit to a choice.
-- **When you finish presenting research via `deliver_research`.** Event type: `research_delivered`. Payload can include the count of options delivered and their titles.
-- **Once per 24 hours as a heartbeat.** Event type: `heartbeat`. Payload can be `{}` or include light session stats. This tells the admin dashboard the droplet is alive even when the customer is quiet.
-- **When the customer has gone silent** (no inbound message for 72h+ after Phase 1). Event type: `customer_silent`. Fire once per silence spell, not repeatedly.
+## The one command
 
-Never include the customer's API key, bot token, or any secret in the payload. Keep payloads small.
-
-## How to use
-
-The portal exposes a signed webhook at `https://app.trybintra.com/api/droplet/report`. You POST a JSON body and include an `X-Bintra-Signature` header that is the HMAC-SHA256 of `<timestamp>.<raw body>` using the shared secret from env var `BINTRA_WEBHOOK_SECRET`. The customer id is in env var `CUSTOMER_ID`.
-
-### Request shape
-
-```json
-{
-  "user_id": "<uuid from $CUSTOMER_ID>",
-  "event_type": "message_in",
-  "payload": { "text": "hi manager", "source": "telegram" },
-  "timestamp": 1745078400
-}
-```
-
-- `timestamp` is unix seconds. Must be within 5 minutes of server time or the portal rejects it.
-- `event_type` must be one of: `message_in`, `message_out`, `option_picked`, `research_delivered`, `customer_silent`, `heartbeat`.
-- `payload` is a JSON object. Keep it under a few KB.
-
-### Bash / curl example
+A helper is pre-installed on this droplet at `/usr/local/bin/bintra-report`. It handles HMAC signing, timestamp, JSON encoding, and the HTTP POST.
 
 ```bash
-TIMESTAMP=$(date +%s)
-BODY=$(jq -c -n \
-  --arg uid "$CUSTOMER_ID" \
-  --arg et "message_in" \
-  --arg text "hi manager" \
-  --argjson ts "$TIMESTAMP" \
-  '{user_id:$uid, event_type:$et, payload:{text:$text, source:"telegram"}, timestamp:$ts}')
-
-SIG=$(printf '%s.%s' "$TIMESTAMP" "$BODY" \
-  | openssl dgst -sha256 -hmac "$BINTRA_WEBHOOK_SECRET" \
-  | awk '{print $2}')
-
-curl -sS -X POST https://app.trybintra.com/api/droplet/report \
-  -H "Content-Type: application/json" \
-  -H "X-Bintra-Signature: $SIG" \
-  --data "$BODY"
+bintra-report <event_type> "<text or JSON>"
 ```
 
-The portal returns `{"ok": true}` on success. On failure you'll get a 4xx/5xx with `{"ok": false, "error": "..."}`. Do not retry on 4xx (bad signature, bad body, stale timestamp — fix it instead). You may retry once on 5xx.
+Environment (`CUSTOMER_ID`, `BINTRA_WEBHOOK_SECRET`) is already set by the systemd unit — you do **not** need to pass any credentials.
+
+## When to fire
+
+You MUST fire exactly one event per trigger below. No trigger means no event.
+
+| Trigger | Command |
+|---|---|
+| A customer message just arrived | `bintra-report message_in "<the customer's exact text>"` |
+| You just sent a Telegram reply | `bintra-report message_out "<the exact text you replied with>"` |
+| Customer commits to option 1/2/3 | `bintra-report option_picked '{"index":2,"title":"<full option title>"}'` |
+| You finished `deliver_research` | `bintra-report research_delivered '{"count":3}'` |
+| Once per day, even when quiet | `bintra-report heartbeat` |
+| Customer silent for 72h+ after Phase 1 | `bintra-report customer_silent '{"hours_since":72}'` |
 
 ## Rules
 
-- **Fire and forget.** Never block the customer reply on the report. If the POST fails, log it to today's `memory/YYYY-MM-DD.md` and move on.
-- **No secrets in payload.** Do not send `BINTRA_WEBHOOK_SECRET`, the LLM key, or the bot token.
-- **Truncate long text.** Cap `text` fields at ~2000 chars. The admin view is a feed, not an archive.
-- **Exact JSON bytes.** The signature is computed over the raw body string. If you re-serialize between signing and sending, the signature will mismatch. Sign the exact bytes you send.
+1. **Every inbound message → one `message_in` report. No exceptions.**
+2. **Every outbound Manager reply → one `message_out` report. No exceptions.**
+3. **Fire-and-forget.** The command returns in under a second. Never wait on the result. If it prints an error, log it to `memory/YYYY-MM-DD.md` and move on — the customer reply is what matters.
+4. **No secrets in payloads.** The helper never sees your LLM key or bot token. Do not echo them into the text argument either.
+5. **Text is auto-truncated** to 2000 chars by the helper. You do not need to trim.
+6. **Text argument** = bare string (helper wraps it as `{"text":"..."}` for you).
+   **JSON argument** = must start with `{` (helper passes it through verbatim).
 
-## Common errors
+## Examples
 
-- **401 Bad signature:** you hashed a different body than you sent, or `BINTRA_WEBHOOK_SECRET` is wrong. Verify the env var is set on the droplet and re-sign the exact body bytes.
-- **400 Stale timestamp:** droplet clock drifted. Let it resync via `systemd-timesyncd` and retry.
-- **403 Customer not provisioned:** the portal hasn't stored a webhook secret for this user yet. This means the provisioner ran without updating the DB — escalate to the Bintra team.
-- **404 User not found:** `CUSTOMER_ID` doesn't match any portal user. Escalate.
+Customer wrote "hi — got a minute?":
+```bash
+bintra-report message_in "hi — got a minute?"
+```
+
+You replied "Hey! Of course. How can I help you today?":
+```bash
+bintra-report message_out "Hey! Of course. How can I help you today?"
+```
+
+Customer picked option 2:
+```bash
+bintra-report option_picked '{"index":2,"title":"Notion templates for solo coaches"}'
+```
+
+## Troubleshooting
+
+The helper prints `bintra-report: portal returned HTTP <code>` on failure.
+
+- **HTTP 400 (stale timestamp)** — droplet clock drifted. `systemctl restart systemd-timesyncd` and retry.
+- **HTTP 401 (bad signature)** — `BINTRA_WEBHOOK_SECRET` mismatch. Escalate to the Bintra team; do not guess.
+- **HTTP 403 (not provisioned)** — portal has no webhook secret for this customer. Escalate.
+- **HTTP 404 (user not found)** — `CUSTOMER_ID` is wrong. Escalate.
+- **Timeout / network error** — log and continue. The customer's reply must not block on this.
