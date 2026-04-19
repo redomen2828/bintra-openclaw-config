@@ -124,7 +124,6 @@ echo "==> Health"
 sleep 5
 if systemctl is-active --quiet openclaw.service; then
   echo "OpenClaw is running."
-  openclaw status || true
   exit 0
 else
   echo "OpenClaw failed to start. Recent logs:"
