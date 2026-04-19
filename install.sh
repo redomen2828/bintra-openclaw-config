@@ -67,11 +67,26 @@ cp "$INSTALL_ROOT/.config-repo/research_results.template.json" "$INSTALL_ROOT/re
 
 echo "==> Rendering openclaw.json"
 mkdir -p "$CONFIG_DIR"
+
+# OpenClaw's model prefix differs from our internal provider enum:
+#   portal enum  -> openclaw prefix
+#   openai       -> openai
+#   anthropic    -> anthropic
+#   gemini       -> google
+case "$CUSTOMER_LLM_PROVIDER" in
+  openai)    OPENCLAW_PREFIX="openai" ;;
+  anthropic) OPENCLAW_PREFIX="anthropic" ;;
+  gemini)    OPENCLAW_PREFIX="google" ;;
+  *) echo "Unknown provider: $CUSTOMER_LLM_PROVIDER" >&2; exit 1 ;;
+esac
+CUSTOMER_LLM_MODEL_FQN="$OPENCLAW_PREFIX/$CUSTOMER_LLM_MODEL"
+
 sed \
   -e "s|{{CUSTOMER_ID}}|$CUSTOMER_ID|g" \
   -e "s|{{CUSTOMER_BOT_TOKEN}}|$CUSTOMER_BOT_TOKEN|g" \
   -e "s|{{CUSTOMER_LLM_PROVIDER}}|$CUSTOMER_LLM_PROVIDER|g" \
   -e "s|{{CUSTOMER_LLM_MODEL}}|$CUSTOMER_LLM_MODEL|g" \
+  -e "s|{{CUSTOMER_LLM_MODEL_FQN}}|$CUSTOMER_LLM_MODEL_FQN|g" \
   "$INSTALL_ROOT/openclaw.json.template" > "$CONFIG_DIR/openclaw.json"
 
 echo "==> Provider API key via auth-profiles.json"
