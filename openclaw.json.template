@@ -5,7 +5,9 @@
       "botToken": "{{CUSTOMER_BOT_TOKEN}}",
       "dmPolicy": "open",
       "historyLimit": 100,
-      "streaming": "partial"
+      "streaming": {
+        "mode": "partial"
+      }
     }
   },
   "agents": {
@@ -28,7 +30,7 @@
   "session": {
     "scope": "per-sender",
     "dmScope": "main",
-    "reset": { "mode": "manual" },
+    "reset": { "mode": "idle" },
     "store": "/opt/bintra/sessions/sessions.json"
   },
   "commands": {
@@ -37,11 +39,5 @@
   "tools": {
     "profile": "coding",
     "deny": ["browser", "canvas"]
-  },
-  "memory": {
-    "path": "/opt/bintra/workspace/memory"
-  },
-  "customer": {
-    "id": "{{CUSTOMER_ID}}"
   }
 }

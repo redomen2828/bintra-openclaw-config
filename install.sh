@@ -77,6 +77,9 @@ cat > "$CONFIG_DIR/auth-profiles.json" <<EOF
 EOF
 chmod 600 "$CONFIG_DIR/auth-profiles.json"
 
+echo "==> openclaw doctor --fix (migrates legacy config keys)"
+openclaw doctor --fix || true
+
 echo "==> systemd service"
 cat > /etc/systemd/system/openclaw.service <<EOF
 [Unit]
