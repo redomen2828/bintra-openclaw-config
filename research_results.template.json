@@ -1,0 +1,41 @@
+{
+  "customer_id": "REPLACE_WITH_CUSTOMER_UUID",
+  "generated_at": "2026-04-19T00:00:00Z",
+  "brief_summary": "One paragraph summarizing what the customer told the Manager in Phase 1: who they are, what they know, what audience access they have, and their constraints. This is for the Manager's context, not to be read aloud to the customer.",
+  "options": [
+    {
+      "title": "Short punchy name for the product",
+      "summary": "1–2 sentences: what the product is and who buys it.",
+      "why_it_fits": "1 sentence tying this directly to something the customer told us about themselves.",
+      "first_step": "One concrete, low-effort action they can do today. Something like: 'post a single tweet asking X' or 'record a 10-minute Loom explaining Y'.",
+      "estimated_time_to_first_sale": "e.g. '2–3 weeks' or '30–45 days'",
+      "evidence": [
+        "Short bullet of supporting evidence (market signal, similar product doing well, audience size, etc.)",
+        "Second supporting bullet.",
+        "Third supporting bullet."
+      ],
+      "risks": [
+        "Biggest reason this could fail.",
+        "Second biggest risk."
+      ]
+    },
+    {
+      "title": "Option 2 title",
+      "summary": "",
+      "why_it_fits": "",
+      "first_step": "",
+      "estimated_time_to_first_sale": "",
+      "evidence": [],
+      "risks": []
+    },
+    {
+      "title": "Option 3 title",
+      "summary": "",
+      "why_it_fits": "",
+      "first_step": "",
+      "estimated_time_to_first_sale": "",
+      "evidence": [],
+      "risks": []
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "{{CUSTOMER_BOT_TOKEN}}",
+      "dmPolicy": "open",
+      "historyLimit": 100,
+      "streaming": "partial"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "/opt/bintra/workspace",
+      "model": {
+        "primary": "{{CUSTOMER_LLM_PROVIDER}}/{{CUSTOMER_LLM_MODEL}}"
+      },
+      "timeoutSeconds": 600
+    },
+    "list": [
+      {
+        "id": "manager",
+        "default": true,
+        "workspace": "/opt/bintra/workspace",
+        "skills": ["check_research_results", "deliver_research"]
+      }
+    ]
+  },
+  "session": {
+    "scope": "per-sender",
+    "dmScope": "main",
+    "reset": { "mode": "manual" },
+    "store": "/opt/bintra/sessions/sessions.json"
+  },
+  "commands": {
+    "text": true
+  },
+  "tools": {
+    "profile": "coding",
+    "deny": ["browser", "canvas"]
+  },
+  "memory": {
+    "path": "/opt/bintra/workspace/memory"
+  },
+  "customer": {
+    "id": "{{CUSTOMER_ID}}"
+  }
+}

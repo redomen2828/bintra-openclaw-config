@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Bintra per-customer OpenClaw installer.
+# Run on a fresh Ubuntu 24.04 droplet as root (or with sudo).
+#
+# Required env vars before running:
+#   CUSTOMER_ID              — UUID from the Bintra portal users table
+#   CUSTOMER_LLM_PROVIDER    — openai | anthropic | gemini
+#   CUSTOMER_LLM_MODEL       — e.g. claude-opus-4-6, gpt-5.4, gemini-3.1-pro-preview
+#   CUSTOMER_LLM_KEY         — decrypted API key from the portal
+#   CUSTOMER_BOT_TOKEN       — Telegram bot token from @BotFather (one bot per customer)
+#
+# Optional:
+#   CONFIG_REPO_URL          — git URL for this repo (defaults to https://github.com/bintra/openclaw-config.git)
+
+set -euo pipefail
+
+: "${CUSTOMER_ID:?CUSTOMER_ID not set}"
+: "${CUSTOMER_LLM_PROVIDER:?CUSTOMER_LLM_PROVIDER not set}"
+: "${CUSTOMER_LLM_MODEL:?CUSTOMER_LLM_MODEL not set}"
+: "${CUSTOMER_LLM_KEY:?CUSTOMER_LLM_KEY not set}"
+: "${CUSTOMER_BOT_TOKEN:?CUSTOMER_BOT_TOKEN not set}"
+
+CONFIG_REPO_URL="${CONFIG_REPO_URL:-https://github.com/redomen2828/bintra-openclaw-config.git}"
+INSTALL_ROOT="/opt/bintra"
+CONFIG_DIR="$HOME/.openclaw"
+
+echo "==> System packages"
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -y curl git ca-certificates jq
+
+echo "==> Node.js 24 LTS"
+if ! command -v node >/dev/null 2>&1; then
+  curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+  apt-get install -y nodejs
+fi
+
+echo "==> OpenClaw"
+npm install -g openclaw@latest
+
+echo "==> Workspace at $INSTALL_ROOT"
+mkdir -p "$INSTALL_ROOT" "$INSTALL_ROOT/sessions" "/data/research"
+if [ ! -d "$INSTALL_ROOT/.git" ]; then
+  git clone "$CONFIG_REPO_URL" "$INSTALL_ROOT/.config-repo"
+  cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
+  cp "$INSTALL_ROOT/.config-repo/openclaw.json.template" "$INSTALL_ROOT/openclaw.json.template"
+  cp "$INSTALL_ROOT/.config-repo/research_results.template.json" "$INSTALL_ROOT/research_results.template.json"
+fi
+
+echo "==> Rendering openclaw.json"
+mkdir -p "$CONFIG_DIR"
+sed \
+  -e "s|{{CUSTOMER_ID}}|$CUSTOMER_ID|g" \
+  -e "s|{{CUSTOMER_BOT_TOKEN}}|$CUSTOMER_BOT_TOKEN|g" \
+  -e "s|{{CUSTOMER_LLM_PROVIDER}}|$CUSTOMER_LLM_PROVIDER|g" \
+  -e "s|{{CUSTOMER_LLM_MODEL}}|$CUSTOMER_LLM_MODEL|g" \
+  "$INSTALL_ROOT/openclaw.json.template" > "$CONFIG_DIR/openclaw.json"
+
+echo "==> Provider API key via auth-profiles.json"
+case "$CUSTOMER_LLM_PROVIDER" in
+  openai)    ENV_KEY="OPENAI_API_KEY" ;;
+  anthropic) ENV_KEY="ANTHROPIC_API_KEY" ;;
+  gemini)    ENV_KEY="GOOGLE_API_KEY" ;;
+  *) echo "Unknown provider: $CUSTOMER_LLM_PROVIDER" >&2; exit 1 ;;
+esac
+
+cat > "$CONFIG_DIR/auth-profiles.json" <<EOF
+{
+  "env": {
+    "$ENV_KEY": "$CUSTOMER_LLM_KEY"
+  }
+}
+EOF
+chmod 600 "$CONFIG_DIR/auth-profiles.json"
+
+echo "==> systemd service"
+cat > /etc/systemd/system/openclaw.service <<EOF
+[Unit]
+Description=OpenClaw gateway for Bintra customer $CUSTOMER_ID
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=$ENV_KEY=$CUSTOMER_LLM_KEY
+Environment=HOME=$HOME
+ExecStart=/usr/bin/openclaw gateway
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 600 /etc/systemd/system/openclaw.service
+
+systemctl daemon-reload
+systemctl enable openclaw.service
+systemctl restart openclaw.service
+
+echo "==> Health"
+sleep 5
+if systemctl is-active --quiet openclaw.service; then
+  echo "OpenClaw is running."
+  openclaw status || true
+  exit 0
+else
+  echo "OpenClaw failed to start. Recent logs:"
+  journalctl -u openclaw.service -n 80 --no-pager
+  exit 1
+fi

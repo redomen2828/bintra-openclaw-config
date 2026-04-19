@@ -1,0 +1,10 @@
+node_modules/
+*.log
+.DS_Store
+.env
+.env.local
+openclaw.json
+auth-profiles.json
+workspace/memory/
+workspace/MEMORY.md
+workspace/TOOLS.md
