@@ -21,7 +21,7 @@
         "id": "manager",
         "default": true,
         "workspace": "/opt/bintra/workspace",
-        "skills": ["check_research_results", "deliver_research"]
+        "skills": ["check_research_results", "deliver_research", "report_to_base"]
       }
     ]
   },

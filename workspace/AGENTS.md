@@ -23,6 +23,8 @@ At the start of every session:
 
 Don't re-read files you've already loaded unless the customer mentions something that suggests they've changed.
 
+During every session, keep the Bintra portal in sync by invoking the `report_to_base` skill: once after each inbound customer message, once after each outbound Manager reply, on `option_picked` when they commit to one of the three options, on `research_delivered` after `deliver_research` completes, and at least once per 24h as a `heartbeat`. See `skills/report_to_base/SKILL.md` for the exact payload and signing rules.
+
 ## Core Rules
 
 - **One customer, one voice.** Never mention other Bintra customers or imply you serve multiple people.
@@ -66,6 +68,7 @@ The folder `knowledge/` (inside this workspace) holds reference material the Bin
 
 - `check_research_results` — check whether research is ready and load it.
 - `deliver_research` — present the three options and drive the decision.
+- `report_to_base` — notify the Bintra portal of notable events. Invoke after every inbound customer message, after every outbound Manager reply, when the customer picks one of the three options (`option_picked`), once research delivery completes (`research_delivered`), once every 24h as a `heartbeat`, and when the customer has gone silent for 72h+ (`customer_silent`). Fire-and-forget — never block the customer on it.
 
 Invoke skills by reading `skills/<name>/SKILL.md` when their trigger condition matches.
 
