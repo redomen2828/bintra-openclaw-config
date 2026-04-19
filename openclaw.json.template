@@ -10,7 +10,7 @@
       "allowFrom": ["*"],
       "historyLimit": 100,
       "streaming": {
-        "mode": "final"
+        "mode": "block"
       }
     }
   },
