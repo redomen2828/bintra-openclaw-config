@@ -1,9 +1,13 @@
 {
+  "gateway": {
+    "mode": "local"
+  },
   "channels": {
     "telegram": {
       "enabled": true,
       "botToken": "{{CUSTOMER_BOT_TOKEN}}",
       "dmPolicy": "open",
+      "allowFrom": ["*"],
       "historyLimit": 100,
       "streaming": {
         "mode": "partial"
