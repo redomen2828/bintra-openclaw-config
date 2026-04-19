@@ -43,13 +43,16 @@ echo "==> OpenClaw"
 npm install -g openclaw@latest
 
 echo "==> Workspace at $INSTALL_ROOT"
-mkdir -p "$INSTALL_ROOT" "$INSTALL_ROOT/sessions" "/data/research"
-if [ ! -d "$INSTALL_ROOT/.git" ]; then
+mkdir -p "$INSTALL_ROOT" "$INSTALL_ROOT/sessions" "$INSTALL_ROOT/workspace" "/data/research"
+if [ ! -d "$INSTALL_ROOT/.config-repo/.git" ]; then
   git clone "$CONFIG_REPO_URL" "$INSTALL_ROOT/.config-repo"
-  cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
-  cp "$INSTALL_ROOT/.config-repo/openclaw.json.template" "$INSTALL_ROOT/openclaw.json.template"
-  cp "$INSTALL_ROOT/.config-repo/research_results.template.json" "$INSTALL_ROOT/research_results.template.json"
+else
+  git -C "$INSTALL_ROOT/.config-repo" fetch --all --quiet
+  git -C "$INSTALL_ROOT/.config-repo" reset --hard origin/main --quiet
 fi
+cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
+cp "$INSTALL_ROOT/.config-repo/openclaw.json.template" "$INSTALL_ROOT/openclaw.json.template"
+cp "$INSTALL_ROOT/.config-repo/research_results.template.json" "$INSTALL_ROOT/research_results.template.json"
 
 echo "==> Rendering openclaw.json"
 mkdir -p "$CONFIG_DIR"
