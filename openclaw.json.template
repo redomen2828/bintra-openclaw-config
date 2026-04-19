@@ -18,7 +18,8 @@
     "defaults": {
       "workspace": "/opt/bintra/workspace",
       "model": {
-        "primary": "{{CUSTOMER_LLM_MODEL_FQN}}"
+        "primary": "{{CUSTOMER_LLM_MODEL_FQN}}",
+        "thinkingLevel": "high"
       },
       "timeoutSeconds": 600
     },
