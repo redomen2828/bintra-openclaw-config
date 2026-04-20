@@ -39,15 +39,17 @@ Once they've greenlit delivery, open with a short framing message. Something lik
 For each of the 3 options in `options[]`, send **one Telegram message per option** in this format (keep it tight, no markdown tables):
 
    ```
-   Option N: <title>
+   Option N: <title> — $<price_usd>
 
    <summary in 1–2 sentences>
 
    Why it fits you: <why_it_fits in 1 sentence>
 
-   First step: <first_step>
+   What we build: <what_bintra_builds>
 
-   Realistic time to first sale: <estimated_time_to_first_sale>
+   What we need from you: <what_customer_provides> (~<customer_effort_hours>h total)
+
+   Delivery: <time_to_product_ready>. First sale realistically: <time_to_first_sale>.
    ```
 
 After all three, send a short prompt: "Which one pulls at you — 1, 2, or 3? Or want me to go deeper on any of them first?"
@@ -63,7 +65,7 @@ Once they pick, update `MEMORY.md`:
 - Add **Chosen direction** with the full option content copied in
 - Clear any Phase 2 waiting notes
 
-Confirm their choice with a single message: "Good. Option N it is. Next session we start building. Between now and then: [first_step from the chosen option]."
+Confirm their choice with a single message: "Good. Option N it is. I'll kick off the build — next time we talk I'll have the first fork for you to pick. Nothing for you to do in the meantime."
 
 ## Rules
 
