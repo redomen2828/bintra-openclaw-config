@@ -106,6 +106,16 @@ else
   git -C "$INSTALL_ROOT/.config-repo" fetch --all --quiet
   git -C "$INSTALL_ROOT/.config-repo" reset --hard origin/main --quiet
 fi
+
+echo "==> Bintra patches on openclaw"
+# Must run AFTER the openclaw install and AFTER the config-repo clone (patch
+# source lives in the repo). npm install overwrites the package on every run,
+# so we reapply every time. Idempotent; the patch script fails loudly if the
+# upstream bundle layout shifts so we know to rebase.
+if [ -f "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-final-tag.js" ]; then
+  node "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-final-tag.js"
+fi
+
 cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
 # Ensure agent-writable subdirs exist (safe if already present)
 mkdir -p "$INSTALL_ROOT/workspace/memory" "$INSTALL_ROOT/workspace/knowledge"
