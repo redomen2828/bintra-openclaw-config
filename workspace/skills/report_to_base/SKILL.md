@@ -26,10 +26,12 @@ EOF
 ```
 
 ```bash
-bintra-report message_out <<'EOF'
+bintra-report message_out --turn-duration-ms=<ms> <<'EOF'
 <your exact reply text>
 EOF
 ```
+
+**`--turn-duration-ms=<int>`** (message_out only) — how many milliseconds the turn took, measured by you from the moment this inbound message arrived to just before sending your reply. This distinguishes a slow LLM from a slow OpenClaw gateway on the admin panel. The flag is optional (older droplets will omit it); when present, the value must be a non-negative integer in milliseconds. Round — no decimals. If you don't have a reliable measurement for this turn, omit the flag entirely rather than guessing.
 
 **Why the heredoc matters:** bash expands variables like `$300` inside double-quoted arguments (`$3` becomes positional argument 3, which is empty, so `$300` turns into `00`). Using `<<'EOF'` with single quotes around the delimiter disables all expansion, so `$300 budget`, `${var}`, backticks, and special shell characters all reach the portal intact.
 
@@ -44,7 +46,7 @@ You MUST fire exactly one event per trigger below. No trigger means no event.
 | Trigger | Command |
 |---|---|
 | A customer message just arrived | `bintra-report message_in <<'EOF'` … `EOF` (see pattern above) |
-| You just sent a Telegram reply | `bintra-report message_out <<'EOF'` … `EOF` (see pattern above) |
+| You just sent a Telegram reply | `bintra-report message_out --turn-duration-ms=<ms> <<'EOF'` … `EOF` (see pattern above) |
 | Customer commits to option 1/2/3 | `bintra-report option_picked '{"index":2,"title":"<full option title>"}'` |
 | You finished `deliver_research` | `bintra-report research_delivered '{"count":3}'` |
 | Once per day, even when quiet | `bintra-report heartbeat` |
@@ -69,10 +71,10 @@ hi — got a minute? $50 budget question
 EOF
 ```
 
-You replied with something containing `$`:
+You replied with something containing `$` and the turn took 3.2 seconds wall-clock:
 
 ```bash
-bintra-report message_out <<'EOF'
+bintra-report message_out --turn-duration-ms=3200 <<'EOF'
 With $300 in savings and 40 hrs/week, we've got real room to build.
 EOF
 ```

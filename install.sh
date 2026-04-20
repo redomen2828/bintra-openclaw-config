@@ -221,6 +221,10 @@ rm -f /root/.config/systemd/user/default.target.wants/openclaw-gateway.service
 loginctl disable-linger root 2>/dev/null || true
 
 echo "==> systemd service"
+# ExecStartPre/Post/StopPost emit gateway_phase events so the admin panel can
+# see phase transitions in real time without waiting for the next heartbeat.
+# All three calls are fire-and-forget (trailing `|| true`) — a webhook failure
+# must never block the gateway from starting or restarting.
 cat > /etc/systemd/system/openclaw.service <<EOF
 [Unit]
 Description=OpenClaw gateway for Bintra customer $CUSTOMER_ID
@@ -233,7 +237,10 @@ $(for k in "${ENV_KEYS[@]}"; do echo "Environment=$k=$CUSTOMER_LLM_KEY"; done)
 Environment=HOME=$HOME
 Environment=CUSTOMER_ID=$CUSTOMER_ID
 Environment=BINTRA_WEBHOOK_SECRET=$CUSTOMER_WEBHOOK_SECRET
+ExecStartPre=-/bin/bash -c '/usr/local/bin/bintra-report gateway_phase '\''{"phase":"booting"}'\'' || true'
 ExecStart=/usr/bin/openclaw gateway
+ExecStartPost=-/bin/bash -c '/usr/local/bin/bintra-report gateway_phase '\''{"phase":"ready"}'\'' || true'
+ExecStopPost=-/bin/bash -c 'if [ "\$SERVICE_RESULT" != "success" ]; then /usr/local/bin/bintra-report gateway_phase '\''{"phase":"crashed"}'\'' || true; fi'
 Restart=always
 RestartSec=5
 
@@ -242,9 +249,43 @@ WantedBy=multi-user.target
 EOF
 chmod 600 /etc/systemd/system/openclaw.service
 
+echo "==> bintra-heartbeat timer (5-min cadence, HARDENING 1.13)"
+# The Manager emits heartbeats once per 24h from the agent loop, but 24h is
+# too coarse for outage detection. A systemd timer at 5-min cadence gives the
+# panel a "last heartbeat within 2 min / stale / offline" signal regardless of
+# customer chat volume, and carries the NRestarts + listener_count telemetry.
+cat > /etc/systemd/system/bintra-heartbeat.service <<EOF
+[Unit]
+Description=Bintra droplet heartbeat reporter
+After=openclaw.service
+
+[Service]
+Type=oneshot
+Environment=CUSTOMER_ID=$CUSTOMER_ID
+Environment=BINTRA_WEBHOOK_SECRET=$CUSTOMER_WEBHOOK_SECRET
+ExecStart=/usr/local/bin/bintra-report heartbeat
+EOF
+chmod 600 /etc/systemd/system/bintra-heartbeat.service
+
+cat > /etc/systemd/system/bintra-heartbeat.timer <<EOF
+[Unit]
+Description=Bintra droplet heartbeat (every 5 min)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+Unit=bintra-heartbeat.service
+
+[Install]
+WantedBy=timers.target
+EOF
+chmod 644 /etc/systemd/system/bintra-heartbeat.timer
+
 systemctl daemon-reload
 systemctl enable openclaw.service
+systemctl enable bintra-heartbeat.timer
 systemctl restart openclaw.service
+systemctl restart bintra-heartbeat.timer
 
 echo "==> Health"
 sleep 5
