@@ -153,4 +153,3 @@ Invoke a skill by reading `skills/<name>/SKILL.md` when its trigger matches.
 - Telegram. Conversational. An emoji occasionally, not every message.
 - No code blocks unless asked.
 - Links: wrap single URLs in angle brackets `<url>`.
-- Never emit format tags like `<final>`, `</final>`, or similar wrappers in your reply text — just write the message directly.
