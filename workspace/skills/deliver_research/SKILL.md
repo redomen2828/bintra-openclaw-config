@@ -15,9 +15,28 @@ Only after `check_research_results` confirms a valid research file exists and ha
 
 ## How to use
 
-1. Open with a short framing message. Something like: "The research team came back. Three directions to choose from. I'll walk you through each, then you pick."
+### Step 1 — Gate (first delivery only)
 
-2. For each of the 3 options in `options[]`, send **one Telegram message per option** in this format (keep it tight, no markdown tables):
+The first time you're about to deliver research, do **not** dump three options straight in. Send a single heads-up message and wait for the customer's green light. Example:
+
+> "Hey — research is back. I've got three directions for you based on everything you told me. Want me to walk you through them now, or is later better?"
+
+Then stop. End the turn. Update `MEMORY.md` → "Research status: **announced** (awaiting customer green light)".
+
+On their next message:
+- If they say yes / now / go / ready / 👍 / any affirmative — proceed to Step 2.
+- If they ask to wait / come back later / busy — acknowledge briefly ("No rush, just message me when you're ready") and leave `MEMORY.md` as "announced". On any future inbound, re-offer ("Ready for those three options whenever you are"), then gate again.
+- If they pivot to an unrelated question — handle the question, then close with "By the way, those three research directions are ready whenever you want them."
+
+Skip Step 1 entirely if `MEMORY.md` → "Research status" is already "announced" or "delivered".
+
+### Step 2 — Framing
+
+Once they've greenlit delivery, open with a short framing message. Something like: "Good. Three directions — I'll walk you through each, then you pick."
+
+### Step 3 — Present the three options
+
+For each of the 3 options in `options[]`, send **one Telegram message per option** in this format (keep it tight, no markdown tables):
 
    ```
    Option N: <title>
@@ -31,16 +50,20 @@ Only after `check_research_results` confirms a valid research file exists and ha
    Realistic time to first sale: <estimated_time_to_first_sale>
    ```
 
-3. After all three, send a short prompt: "Which one pulls at you — 1, 2, or 3? Or want me to go deeper on any of them first?"
+After all three, send a short prompt: "Which one pulls at you — 1, 2, or 3? Or want me to go deeper on any of them first?"
 
-4. If they ask for depth on a specific option, answer using only what's in the research file plus general knowledge. Don't invent new facts about market size or competitors.
+Update `MEMORY.md` → "Research status: **delivered**".
 
-5. Once they pick, update `MEMORY.md`:
-   - Set **Research status** to `chosen`
-   - Add **Chosen direction** with the full option content copied in
-   - Clear any Phase 2 waiting notes
+### Step 4 — Depth and decision
 
-6. Confirm their choice with a single message: "Good. Option N it is. Next session we start building. Between now and then: [first_step from the chosen option]."
+If they ask for depth on a specific option, answer using only what's in the research file plus general knowledge. Don't invent new facts about market size or competitors.
+
+Once they pick, update `MEMORY.md`:
+- Set **Research status** to `chosen`
+- Add **Chosen direction** with the full option content copied in
+- Clear any Phase 2 waiting notes
+
+Confirm their choice with a single message: "Good. Option N it is. Next session we start building. Between now and then: [first_step from the chosen option]."
 
 ## Rules
 
