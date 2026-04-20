@@ -206,6 +206,20 @@ ENV_KEY="${ENV_KEYS[0]}"
 echo "==> openclaw doctor --fix (auto-migrate + generate gateway token)"
 openclaw doctor --fix </dev/null || true
 
+# `openclaw doctor --fix` plants a competing user-level systemd unit at
+# /root/.config/systemd/user/openclaw-gateway.service. It fights our
+# system-level openclaw.service for 127.0.0.1:18789; both crashloop
+# until one of them wins. Kill the user-level copy on every install.
+# Observed 2026-04-20: this caused ~4min of first-message silence on
+# Peter's droplet. See HARDENING.md 1.10.
+echo "==> removing stray user-level openclaw-gateway unit (doctor --fix side effect)"
+systemctl --user stop openclaw-gateway.service 2>/dev/null || true
+systemctl --user disable openclaw-gateway.service 2>/dev/null || true
+rm -f /root/.config/systemd/user/openclaw-gateway.service
+rm -f /root/.config/systemd/user/default.target.wants/openclaw-gateway.service
+# Belt-and-suspenders: root should never have user-level services at boot.
+loginctl disable-linger root 2>/dev/null || true
+
 echo "==> systemd service"
 cat > /etc/systemd/system/openclaw.service <<EOF
 [Unit]
