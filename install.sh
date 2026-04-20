@@ -121,6 +121,14 @@ cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
 mkdir -p "$INSTALL_ROOT/workspace/memory" "$INSTALL_ROOT/workspace/knowledge"
 # convothathappened.txt is a dev artifact from the config repo — never ship to customers
 rm -f "$INSTALL_ROOT/workspace/convothathappened.txt"
+
+# Substitute {{CUSTOMER_ID}} placeholders in workspace markdown files. Skill
+# files (e.g. check_research_results/SKILL.md) reference paths like
+# /data/research/{{CUSTOMER_ID}}.json — the Manager reads these literally, so
+# the token must be rendered at provision time. Runs against all AGENTS.md and
+# skills/*/SKILL.md files under workspace/.
+find "$INSTALL_ROOT/workspace" -type f \( -name 'AGENTS.md' -o -name 'SKILL.md' -o -name 'SOUL.md' \) \
+  -exec sed -i "s|{{CUSTOMER_ID}}|$CUSTOMER_ID|g" {} +
 cp "$INSTALL_ROOT/.config-repo/openclaw.json.template" "$INSTALL_ROOT/openclaw.json.template"
 cp "$INSTALL_ROOT/.config-repo/research_results.template.json" "$INSTALL_ROOT/research_results.template.json"
 
