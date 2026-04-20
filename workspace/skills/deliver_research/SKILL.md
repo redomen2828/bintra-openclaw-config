@@ -1,6 +1,6 @@
 ---
 name: "Deliver Research"
-version: "1.0"
+version: "1.1"
 description: "Present the three product opportunities from the Research Lab to the customer on Telegram and drive them to a decision."
 requires: ["check_research_results"]
 platform: ["telegram"]
@@ -36,7 +36,15 @@ Once they've greenlit delivery, open with a short framing message. Something lik
 
 ### Step 3 — Present the three options
 
-For each of the 3 options in `options[]`, send **one Telegram message per option** in this format (keep it tight, no markdown tables):
+**Send each option as its OWN Telegram message.** This is important — three separate messages, not one long message. Telegram has a ~4000-char limit per message and one long bubble is visually overwhelming.
+
+If for any reason you DO have to send all three in one message (e.g. a rate-limit retry where separate sends failed), insert a visible separator line between them so the customer can visually parse the three options:
+
+```
+━━━━━━━━━━━━━━━━━━━━
+```
+
+Per-option format (keep it tight, no markdown tables, no asterisk-bold — Telegram renders asterisks literally unless MarkdownV2 is on, which it isn't):
 
    ```
    Option N: <title> — $<price_usd>
@@ -49,12 +57,21 @@ For each of the 3 options in `options[]`, send **one Telegram message per option
 
    What we need from you: <what_customer_provides> (~<customer_effort_hours>h total)
 
-   Delivery: <time_to_product_ready>. First sale realistically: <time_to_first_sale>.
+   Delivery: <time_to_product_ready>.
+   First sale realistically: <time_to_first_sale>.
    ```
 
-After all three, send a short prompt: "Which one pulls at you — 1, 2, or 3? Or want me to go deeper on any of them first?"
+Between Option 1 and Option 2, and again between Option 2 and Option 3, a short pacing beat is fine ("Next one:") but not required. Do NOT re-summarise earlier options — keep it forward-moving.
+
+After all three, send a SEPARATE short prompt as its own message: "Which one pulls at you — 1, 2, or 3? Or want me to go deeper on any of them first?"
 
 Update `MEMORY.md` → "Research status: **delivered**".
+
+**Formatting rules (Telegram-specific):**
+- No `**bold**` or `*bold*` — Telegram renders the asterisks as literal characters in plain-text mode. If you want emphasis, use capitalisation or just rely on punctuation.
+- No markdown bullet points (`-`, `*`). Use line breaks between ideas instead.
+- Blank lines between ideas are fine and help readability.
+- Don't use code blocks (``` or backticks) around option fields — they look like code to the customer.
 
 ### Step 4 — Depth and decision
 
