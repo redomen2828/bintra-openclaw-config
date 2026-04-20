@@ -237,6 +237,14 @@ $(for k in "${ENV_KEYS[@]}"; do echo "Environment=$k=$CUSTOMER_LLM_KEY"; done)
 Environment=HOME=$HOME
 Environment=CUSTOMER_ID=$CUSTOMER_ID
 Environment=BINTRA_WEBHOOK_SECRET=$CUSTOMER_WEBHOOK_SECRET
+# CUSTOMER_BOT_TOKEN is consumed by the workspace-level "snappy-welcome" hook
+# (workspace/hooks/snappy-welcome/handler.js), which fires a sub-2s placeholder
+# Telegram message on the first inbound per conversation so the customer isn't
+# staring at 5–15s of silence during OpenClaw's cold-boot LLM bootstrap.
+# OpenClaw itself reads the same token from openclaw.json for the telegram
+# channel; this env copy is what the hook's fetch() call uses. Unit file is
+# chmod 600; token never leaves this process tree.
+Environment=CUSTOMER_BOT_TOKEN=$CUSTOMER_BOT_TOKEN
 ExecStartPre=-/bin/bash -c '/usr/local/bin/bintra-report gateway_phase '\''{"phase":"booting"}'\'' || true'
 ExecStart=/usr/bin/openclaw gateway
 ExecStartPost=-/bin/bash -c '/usr/local/bin/bintra-report gateway_phase '\''{"phase":"ready"}'\'' || true'

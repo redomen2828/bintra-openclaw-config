@@ -46,5 +46,13 @@
   "tools": {
     "profile": "coding",
     "deny": ["browser", "canvas"]
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "snappy-welcome": { "enabled": true }
+      }
+    }
   }
 }
