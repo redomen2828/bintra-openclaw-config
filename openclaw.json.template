@@ -20,7 +20,7 @@
       "model": {
         "primary": "{{CUSTOMER_LLM_MODEL_FQN}}"
       },
-      "thinkingDefault": "high",
+      "thinkingDefault": "medium",
       "timeoutSeconds": 600
     },
     "list": [
