@@ -27,6 +27,51 @@ set -euo pipefail
 CONFIG_REPO_URL="${CONFIG_REPO_URL:-https://github.com/redomen2828/bintra-openclaw-config.git}"
 INSTALL_ROOT="/opt/bintra"
 CONFIG_DIR="$HOME/.openclaw"
+SERVICE_FILE="/etc/systemd/system/openclaw.service"
+
+# --- Customer-change state wipe --------------------------------------------
+# If the droplet was previously provisioned for a different CUSTOMER_ID,
+# the existing workspace/session state belongs to that prior customer. We
+# MUST NOT let it bleed into the new customer's environment (MEMORY.md,
+# USER.md, IDENTITY.md, memory/ daily logs, knowledge/, sessions). Detect
+# and wipe.
+#
+# Same-customer re-install (config bump, version upgrade) should preserve
+# state so conversation history and the Manager's memory stay intact.
+#
+# Caller can force a wipe with FORCE_WIPE=1 (used by scripts/reset-droplet.ts).
+PREV_CUSTOMER_ID=""
+if [ -f "$SERVICE_FILE" ]; then
+  PREV_CUSTOMER_ID="$(awk -F= '/^Environment=CUSTOMER_ID=/ { print $3; exit }' "$SERVICE_FILE" || true)"
+fi
+
+WIPE_STATE=0
+WIPE_REASON=""
+if [ "${FORCE_WIPE:-0}" = "1" ]; then
+  WIPE_STATE=1
+  WIPE_REASON="FORCE_WIPE=1"
+elif [ -n "$PREV_CUSTOMER_ID" ] && [ "$PREV_CUSTOMER_ID" != "$CUSTOMER_ID" ]; then
+  WIPE_STATE=1
+  WIPE_REASON="droplet was provisioned for $PREV_CUSTOMER_ID; now reprovisioning for $CUSTOMER_ID"
+fi
+
+if [ "$WIPE_STATE" = "1" ]; then
+  echo "==> Customer-change state wipe ($WIPE_REASON)"
+  systemctl stop openclaw.service 2>/dev/null || true
+  rm -f "$INSTALL_ROOT/workspace/MEMORY.md" \
+        "$INSTALL_ROOT/workspace/IDENTITY.md" \
+        "$INSTALL_ROOT/workspace/USER.md" \
+        "$INSTALL_ROOT/workspace/BOOTSTRAP.md" \
+        "$INSTALL_ROOT/workspace/HEARTBEAT.md" \
+        "$INSTALL_ROOT/workspace/TOOLS.md"
+  rm -rf "$INSTALL_ROOT/workspace/memory" \
+         "$INSTALL_ROOT/workspace/knowledge" \
+         "$INSTALL_ROOT/workspace/state"
+  rm -f "$INSTALL_ROOT/sessions/sessions.json"
+  rm -rf "$CONFIG_DIR/agents"
+  echo "   state wiped"
+fi
+# --- end wipe ---------------------------------------------------------------
 
 echo "==> System packages"
 export DEBIAN_FRONTEND=noninteractive
@@ -62,6 +107,10 @@ else
   git -C "$INSTALL_ROOT/.config-repo" reset --hard origin/main --quiet
 fi
 cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
+# Ensure agent-writable subdirs exist (safe if already present)
+mkdir -p "$INSTALL_ROOT/workspace/memory" "$INSTALL_ROOT/workspace/knowledge"
+# convothathappened.txt is a dev artifact from the config repo — never ship to customers
+rm -f "$INSTALL_ROOT/workspace/convothathappened.txt"
 cp "$INSTALL_ROOT/.config-repo/openclaw.json.template" "$INSTALL_ROOT/openclaw.json.template"
 cp "$INSTALL_ROOT/.config-repo/research_results.template.json" "$INSTALL_ROOT/research_results.template.json"
 
