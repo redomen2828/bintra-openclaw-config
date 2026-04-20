@@ -152,21 +152,43 @@ sed \
   "$INSTALL_ROOT/openclaw.json.template" > "$CONFIG_DIR/openclaw.json"
 
 echo "==> Provider API key via auth-profiles.json"
+# We write every env-var alias each provider might read under, so OpenClaw
+# version bumps (which sometimes change the lookup name, e.g.
+# GOOGLE_API_KEY vs GOOGLE_GENERATIVE_AI_API_KEY) don't silently break auth.
 case "$CUSTOMER_LLM_PROVIDER" in
-  openai)    ENV_KEY="OPENAI_API_KEY" ;;
-  anthropic) ENV_KEY="ANTHROPIC_API_KEY" ;;
-  gemini)    ENV_KEY="GOOGLE_API_KEY" ;;
+  openai)
+    ENV_KEYS=(OPENAI_API_KEY)
+    ;;
+  anthropic)
+    ENV_KEYS=(ANTHROPIC_API_KEY)
+    ;;
+  gemini)
+    ENV_KEYS=(GOOGLE_API_KEY GOOGLE_GENERATIVE_AI_API_KEY GEMINI_API_KEY)
+    ;;
   *) echo "Unknown provider: $CUSTOMER_LLM_PROVIDER" >&2; exit 1 ;;
 esac
+
+# Build the JSON env map for auth-profiles.json
+ENV_JSON_ENTRIES=""
+for k in "${ENV_KEYS[@]}"; do
+  if [ -n "$ENV_JSON_ENTRIES" ]; then
+    ENV_JSON_ENTRIES="$ENV_JSON_ENTRIES,"$'\n'
+  fi
+  ENV_JSON_ENTRIES="$ENV_JSON_ENTRIES    \"$k\": \"$CUSTOMER_LLM_KEY\""
+done
 
 cat > "$CONFIG_DIR/auth-profiles.json" <<EOF
 {
   "env": {
-    "$ENV_KEY": "$CUSTOMER_LLM_KEY"
+$ENV_JSON_ENTRIES
   }
 }
 EOF
 chmod 600 "$CONFIG_DIR/auth-profiles.json"
+
+# Primary key (first in the list) — used for the systemd unit below so logs
+# stay readable. All aliases are in auth-profiles.json.
+ENV_KEY="${ENV_KEYS[0]}"
 
 echo "==> openclaw doctor --fix (auto-migrate + generate gateway token)"
 openclaw doctor --fix </dev/null || true
@@ -180,7 +202,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-Environment=$ENV_KEY=$CUSTOMER_LLM_KEY
+$(for k in "${ENV_KEYS[@]}"; do echo "Environment=$k=$CUSTOMER_LLM_KEY"; done)
 Environment=HOME=$HOME
 Environment=CUSTOMER_ID=$CUSTOMER_ID
 Environment=BINTRA_WEBHOOK_SECRET=$CUSTOMER_WEBHOOK_SECRET
