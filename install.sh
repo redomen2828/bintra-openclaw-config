@@ -199,6 +199,17 @@ $ENV_JSON_ENTRIES
 EOF
 chmod 600 "$CONFIG_DIR/auth-profiles.json"
 
+# HARDENING 2.2: write the LLM key to a mode-0600 EnvironmentFile instead of
+# embedding it inline in the systemd unit. journalctl / systemctl show can
+# leak inline Environment= values to non-root contexts under some configs;
+# EnvironmentFile is only readable by root.
+AUTH_ENV_FILE="$CONFIG_DIR/auth.env"
+: > "$AUTH_ENV_FILE"
+chmod 600 "$AUTH_ENV_FILE"
+for k in "${ENV_KEYS[@]}"; do
+  echo "$k=$CUSTOMER_LLM_KEY" >> "$AUTH_ENV_FILE"
+done
+
 # Primary key (first in the list) — used for the systemd unit below so logs
 # stay readable. All aliases are in auth-profiles.json.
 ENV_KEY="${ENV_KEYS[0]}"
@@ -233,7 +244,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-$(for k in "${ENV_KEYS[@]}"; do echo "Environment=$k=$CUSTOMER_LLM_KEY"; done)
+EnvironmentFile=$AUTH_ENV_FILE
 Environment=HOME=$HOME
 Environment=CUSTOMER_ID=$CUSTOMER_ID
 Environment=BINTRA_WEBHOOK_SECRET=$CUSTOMER_WEBHOOK_SECRET
