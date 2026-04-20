@@ -20,8 +20,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const PLACEHOLDER_TEXT =
-	"Hey — good to see you. Your Manager is waking up now, hang tight for a moment.";
+// Intentionally phrased WITHOUT a greeting ("Hey", "Hi"). The Manager's first
+// real reply opens with "Hey <name>", so prefacing with another greeting here
+// produces a double-"Hey" sequence that reads robotic. Keep this line as a
+// plain loading notification.
+const PLACEHOLDER_TEXT = "just a moment while I load your setup…";
 
 // /opt/bintra/workspace is the workspace root on droplets. We deliberately
 // hard-code this rather than reading it off the event, because the workspaceDir
