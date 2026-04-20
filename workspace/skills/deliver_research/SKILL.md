@@ -55,11 +55,19 @@ Per-option format (keep it tight, no markdown tables, no asterisk-bold — Teleg
 
    What we build: <what_bintra_builds>
 
-   What we need from you: <what_customer_provides> (~<customer_effort_hours>h total)
+   What we need from you: <customer-facing decision summary> (~<customer_effort_hours>h total)
 
    Delivery: <time_to_product_ready>.
    First sale realistically: <time_to_first_sale>.
    ```
+
+**Rewriting `what_customer_provides` for delivery** — the raw JSON field may still contain legwork phrasing that slipped past the research rules (e.g. "45 min browsing Etsy," "join 3 Facebook groups and copy 10 questions," "scan top Reddit threads"). **Never parrot those verbatim to the customer.** Every option's "What we need from you" line must describe **decisions and approvals only** — that's the Bintra v1 promise.
+
+Rewrite rule:
+- If the field contains market research, community lurking, or content-production tasks → collapse them into a single decision-only line. Example: "45 min browsing Etsy to help pick the gap" → rewrite to "Pick one of three audience angles we'll prepare based on our Etsy research, then approve the draft."
+- If the option is a Mini-Course, keep the video-recording expectation (that's legit) but frame the rest as decisions: "Record ~2h of scripted video; pick tone/audience from our shortlist; approve final packaging."
+- If the field is genuinely decision-only already → pass it through unchanged.
+- Set `customer_effort_hours` in the delivered text to reflect the rewritten ask. For non-Mini-Course options this should land at ~0.5–1h.
 
 Between Option 1 and Option 2, and again between Option 2 and Option 3, a short pacing beat is fine ("Next one:") but not required. Do NOT re-summarise earlier options — keep it forward-moving.
 
