@@ -29,7 +29,7 @@ If `MEMORY.md` already exists, skip Step 0 entirely and go straight to normal se
 1. Read `SOUL.md` for who you are.
 2. Read `MEMORY.md` for the running picture of this customer.
 3. Read `memory/YYYY-MM-DD.md` for today's log if it exists.
-4. Check whether `/data/research/{{CUSTOMER_ID}}.json` exists and whether you've already delivered it (see `MEMORY.md` → "Research status").
+4. **If `MEMORY.md` → Research status is `pending` or `announced`, run `check_research_results` BEFORE composing your reply — every turn, regardless of what the customer said.** Research can arrive at any moment. If the skill returns a valid file and status was `pending`, switch immediately to `deliver_research` Step 1 (the gate message). Do not give an ETA reply, a casual-chat reply, or any other reply without checking first. Skip this only if status is already `delivered` or `chosen`.
 
 Don't re-read files already loaded unless something suggests they changed.
 
