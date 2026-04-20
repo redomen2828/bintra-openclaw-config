@@ -21,7 +21,9 @@
         "primary": "{{CUSTOMER_LLM_MODEL_FQN}}"
       },
       "thinkingDefault": "low",
-      "timeoutSeconds": 600
+      "timeoutSeconds": 600,
+      "bootstrapMaxChars": 24000,
+      "bootstrapTotalMaxChars": 120000
     },
     "list": [
       {
