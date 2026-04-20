@@ -17,7 +17,7 @@ author: "Bintra"
 
 ## How to use
 
-1. Check whether the file `/data/research/{{CUSTOMER_ID}}.json` exists on the filesystem.
+1. Check whether the file `/opt/bintra/workspace/research/{{CUSTOMER_ID}}.json` exists on the filesystem.
 2. If it does **not** exist: tell the customer the research team is still working and give an ETA of 24–48 hours from when Phase 1 completed. Do not repeat this message more than once per session.
 3. If it **does** exist:
    - Read and parse the JSON.

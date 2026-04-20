@@ -100,6 +100,11 @@ npm install -g openclaw@latest
 
 echo "==> Workspace at $INSTALL_ROOT"
 mkdir -p "$INSTALL_ROOT" "$INSTALL_ROOT/sessions" "$INSTALL_ROOT/workspace" "/data/research"
+# Symlink research into the workspace so the Manager can read it. OpenClaw's
+# "coding" tool profile restricts filesystem access to the workspace root; the
+# research drop target lives at /data/research/ for backup convenience, so
+# surface it under workspace/research/ via symlink.
+ln -sfn /data/research "$INSTALL_ROOT/workspace/research"
 if [ ! -d "$INSTALL_ROOT/.config-repo/.git" ]; then
   git clone "$CONFIG_REPO_URL" "$INSTALL_ROOT/.config-repo"
 else
