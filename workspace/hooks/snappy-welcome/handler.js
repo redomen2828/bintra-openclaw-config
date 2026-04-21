@@ -32,7 +32,7 @@ const PLACEHOLDER_TEXT = "just a moment while I load your setup…";
 // Same root as AGENTS.md references.
 const STAMP_DIR = "/opt/bintra/workspace/state/snappy-welcome";
 
-const TELEGRAM_SEND_TIMEOUT_MS = 2000;
+const TELEGRAM_SEND_TIMEOUT_MS = 5000;
 const FAILURE_MARKER = "snappy-welcome: send failed";
 
 /**

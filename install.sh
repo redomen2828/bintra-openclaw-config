@@ -66,6 +66,7 @@ if [ "$WIPE_STATE" = "1" ]; then
         "$INSTALL_ROOT/workspace/TOOLS.md"
   rm -rf "$INSTALL_ROOT/workspace/memory" \
          "$INSTALL_ROOT/workspace/knowledge" \
+         "$INSTALL_ROOT/workspace/customer_notes" \
          "$INSTALL_ROOT/workspace/state"
   rm -f "$INSTALL_ROOT/sessions/sessions.json"
   rm -rf "$CONFIG_DIR/agents"
@@ -99,7 +100,7 @@ echo "==> OpenClaw"
 npm install -g openclaw@latest
 
 echo "==> Workspace at $INSTALL_ROOT"
-mkdir -p "$INSTALL_ROOT" "$INSTALL_ROOT/sessions" "$INSTALL_ROOT/workspace" "/data/research"
+mkdir -p "$INSTALL_ROOT" "$INSTALL_ROOT/sessions" "$INSTALL_ROOT/workspace" "$INSTALL_ROOT/workspace/customer_notes" "/data/research"
 # Symlink research into the workspace so the Manager can read it. OpenClaw's
 # "coding" tool profile restricts filesystem access to the workspace root; the
 # research drop target lives at /data/research/ for backup convenience, so
@@ -121,7 +122,23 @@ if [ -f "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-final-tag.js" ]; then
   node "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-final-tag.js"
 fi
 
-cp -r "$INSTALL_ROOT/.config-repo/workspace/." "$INSTALL_ROOT/workspace/"
+# Copy workspace: refresh everything EXCEPT customer-state files (MEMORY.md,
+# IDENTITY.md, USER.md) that the Manager owns and mutates across sessions. If
+# we clobbered those on a same-customer re-install (config bump / version
+# upgrade), we'd wipe the Manager's accumulated memory of the customer. The
+# customer-change wipe above already nukes them when CUSTOMER_ID changes.
+rsync -a \
+      --exclude 'MEMORY.md' \
+      --exclude 'IDENTITY.md' \
+      --exclude 'USER.md' \
+      "$INSTALL_ROOT/.config-repo/workspace/" "$INSTALL_ROOT/workspace/"
+# Seed the state files only if missing (fresh customer → use repo template;
+# existing customer → preserve Manager's state).
+for f in MEMORY.md IDENTITY.md USER.md; do
+  if [ ! -f "$INSTALL_ROOT/workspace/$f" ] && [ -f "$INSTALL_ROOT/.config-repo/workspace/$f" ]; then
+    cp "$INSTALL_ROOT/.config-repo/workspace/$f" "$INSTALL_ROOT/workspace/$f"
+  fi
+done
 # Ensure agent-writable subdirs exist (safe if already present)
 mkdir -p "$INSTALL_ROOT/workspace/memory" "$INSTALL_ROOT/workspace/knowledge"
 # convothathappened.txt is a dev artifact from the config repo — never ship to customers

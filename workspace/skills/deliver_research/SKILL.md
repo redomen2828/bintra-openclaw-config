@@ -95,14 +95,22 @@ Confirm their choice with a single message: "Good. Option N it is. I'll kick off
 ## Rules
 
 - **Do not recommend a specific option — resist it, even when asked.** The customer picking their own direction is load-bearing for the v1 accountability model: if the product doesn't sell right away, "we made the call together" only holds if the call was genuinely theirs. Handle "which do you recommend?" in escalating tiers:
-  - **First ask → reframe, don't pick.** "That's yours to call — it's your market to live in. I can compare them on whichever angle would help: which fits your week best, which has the fastest first-sale path, which feels lowest-risk. Want me to walk through one of those?"
-  - **Second ask → lay out trade-offs, still no pick.** Map each option against their stated priorities (time, budget, camera-comfort, audience interest). Stay even-handed.
-  - **Third ask, only after trade-offs are laid out → a lean read, framed as input not verdict.** "If I had to lean, I'd lean N, mostly because of X — but that's my read, you're the one who has to live with the product. Take it as input, not a call."
+  - **First ask → pure reframe, no menu.** "That's yours to call — it's your market to live in. What'd help you narrow it down?" Stop there. Do NOT list comparison angles at this tier — that collapses tier 1 into tier 2.
+  - **Second ask → lay out trade-offs even-handed.** Map each option against their stated constraints (time, price band, ads budget, any expertise they mentioned). Cover all three; no lean.
+  - **Third ask, only after trade-offs are on the table → lean read, framed as input not verdict.** "If I had to lean, I'd lean N, mostly because of X — but that's my read, you're the one who has to live with the product. Take it as input, not a call."
   - **Never phrase as a clean recommendation** ("I recommend X" / "go with X" / "X is the best one"). Always soft, always their call.
+- **Mini-Course camera gate.** If any of the three options is category `Mini-Courses`, before the customer commits to that option, ask: "Heads up — this one needs you on camera reading prepared scripts, about 2 hours of recording across 5 short videos. Okay with that, or want to skip this option?" Camera comfort is not pre-collected in intake, so this gate has to happen at delivery. If they're not comfortable, acknowledge and steer to the other two options; don't push.
 - Do **not** deliver more than once. If research was already delivered (check `MEMORY.md`), refer back to the existing options instead of re-sending.
 - Do **not** blend options. The customer picks one.
+- **Post-delivery modification requests are NOT clean picks.** If the customer reacts to the three options with "I like Option N but [change X]" / "can we blend in Y" / "make it more Z" / "close, but add AI / something else" — **do not invent features on the spot** and **do not set Research status to `chosen`**. The Research Lab validated the scope of the current options; anything added on the fly is a promise we haven't checked we can keep (real example: an "AI-powered Notion template" sounds reasonable but Notion has no native AI hooks — the build would stall or ship broken). Instead:
+  1. Capture the feedback verbatim in `MEMORY.md` under a new section `## Rebrief feedback`: the option they gravitated toward (if any), their exact modification ask (quote it), any context they volunteered.
+  2. Set **Research status** to `rebrief-requested` (not `chosen`).
+  3. Reply once, honestly: "Noted. Let me send '[feedback paraphrased]' back to the team. They'll come back in 6–12 hours with a refined cut, or tell us if what you want isn't buildable in our pipeline. Message me whenever — if a refined cut's landed I'll show you right away."
+  4. End the turn. Do not act on the original 3 options after a rebrief request.
+
+  On the customer's next inbound, the HARD INVARIANT in `AGENTS.md` (Phase 2) runs `check_research_results` — which sees the admin's re-pushed file and routes back to Step 1 with the refined options.
 
 ## Common errors
 
-- **Customer wants a fourth option.** Tell them: the Research Lab gives three; if none fit, you'll go back to the team and re-brief. Confirm before doing so — a re-brief costs them another 24–48 hours.
+- **Customer wants a fourth option.** Tell them: the Research Lab gives three; if none fit, you'll go back to the team and re-brief. Confirm before doing so — a re-brief costs them another 6–12 hours.
 - **Customer picks then changes their mind next session.** Update `MEMORY.md` to the new choice. No drama.
