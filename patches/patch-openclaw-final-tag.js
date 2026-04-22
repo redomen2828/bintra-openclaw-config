@@ -64,14 +64,14 @@ if (src.includes(marker)) {
   process.exit(0);
 }
 
-const needle =
-  "function stripFinalTagsFromText(text) {\n" +
-  "\tconst normalized = coerceText(text);\n" +
-  "\tif (!normalized) return normalized;\n" +
-  "\treturn normalized.replace(FINAL_TAG_RE, \"\");\n" +
-  "}";
+// Regex-based needle so we survive upstream helper renames (observed:
+// coerceText → coerceChatContentText between openclaw bundles). Capture the
+// coerce function's actual name so the replacement uses whichever one the
+// current bundle exports.
+const needleRe = /function stripFinalTagsFromText\(text\) \{\n\tconst normalized = (\w+)\(text\);\n\tif \(!normalized\) return normalized;\n\treturn normalized\.replace\(FINAL_TAG_RE, ""\);\n\}/;
 
-if (!src.includes(needle)) {
+const match = src.match(needleRe);
+if (!match) {
   console.error(
     "[patch] stripFinalTagsFromText target not found — openclaw bundle layout changed. " +
       "Rebase patches/patch-openclaw-final-tag.js against the new version.",
@@ -79,10 +79,12 @@ if (!src.includes(needle)) {
   process.exit(1);
 }
 
+const coerceFn = match[1];
+
 const replacement =
   "function stripFinalTagsFromText(text) {\n" +
   "\t" + marker + "\n" +
-  "\tconst normalized = coerceText(text);\n" +
+  "\tconst normalized = " + coerceFn + "(text);\n" +
   "\tif (!normalized) return normalized;\n" +
   "\treturn normalized\n" +
   "\t\t.replace(FINAL_TAG_RE, \"\")\n" +
@@ -91,5 +93,5 @@ const replacement =
   "\t\t.replace(/\\s+$/, \"\");\n" +
   "}";
 
-fs.writeFileSync(target, src.replace(needle, replacement));
-console.log("[patch] applied");
+fs.writeFileSync(target, src.replace(needleRe, replacement));
+console.log("[patch] applied (helper=" + coerceFn + ")");
