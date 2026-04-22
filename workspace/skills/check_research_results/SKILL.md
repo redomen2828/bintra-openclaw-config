@@ -17,6 +17,8 @@ author: "Bintra"
 
 ## How to use
 
+0. **Guard: orphan-file check.** Before looking for any file, read `MEMORY.md` → "Research status". If status is `not-requested`, the Research Lab has never been briefed for this session — any file that happens to be on disk is stale state left over from a prior run, NOT research generated for this customer's current intake. **Return "no research found" and do nothing else.** Do NOT read the file, do NOT show it, do NOT pivot to `deliver_research`. Serving an orphan file pretends you have a profile-matched product set when you don't; that's a dishonesty bug. Proceed to step 1 only if status is `pending`, `announced`, `delivered`, `rebrief-requested`, or `chosen`.
+
 1. Look for the research file in these paths, in order. The FIRST hit wins:
    - `/opt/bintra/workspace/knowledge/bintra_research_*.json` — admin-dashboard upload flow (`push-knowledge.ts --from-db`). There should be exactly one match; if there are multiple, pick the newest by mtime.
    - `/opt/bintra/workspace/knowledge/research_results.json` — legacy admin-dashboard filename.
