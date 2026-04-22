@@ -1,6 +1,6 @@
 ---
 name: "Deliver Research"
-version: "1.1"
+version: "1.2"
 description: "Present the three product opportunities from the Research Lab to the customer on Telegram and drive them to a decision."
 requires: ["check_research_results"]
 platform: ["telegram"]
@@ -30,36 +30,48 @@ On their next message:
 
 Skip Step 1 entirely if `MEMORY.md` → "Research status" is already "announced" or "delivered".
 
-### Step 2 — Framing
+### Step 2 — Deliver all three options in ONE message
 
-Once they've greenlit delivery, open with a short framing message. Something like: "Good. Three directions — I'll walk you through each, then you pick."
+Once they've greenlit delivery, send a SINGLE message containing: the opener, all three options separated by a visible divider, and the picker question at the end. Do **not** split across turns — some models (e.g. Gemini Flash) close the turn after one text chunk and the customer gets stranded seeing only Option 1.
 
-### Step 3 — Present the three options
+Telegram's per-message limit is 4096 characters. Three options in the format below plus opener + picker lands comfortably under that limit.
 
-**Send each option as its OWN Telegram message.** This is important — three separate messages, not one long message. Telegram has a ~4000-char limit per message and one long bubble is visually overwhelming.
-
-If for any reason you DO have to send all three in one message (e.g. a rate-limit retry where separate sends failed), insert a visible separator line between them so the customer can visually parse the three options:
+**Message shape:**
 
 ```
+Good. Three directions — I'll walk you through each, then you pick.
+
+Option 1: <title> — $<price_usd>
+
+<summary in 1–2 sentences>
+
+Why it fits you: <why_it_fits in 1 sentence>
+
+What we build: <what_bintra_builds>
+
+What we need from you: <customer-facing decision summary> (~<customer_effort_hours>h total)
+
+Delivery: <time_to_product_ready>.
+First sale realistically: <time_to_first_sale>.
+
 ━━━━━━━━━━━━━━━━━━━━
+
+Option 2: <title> — $<price_usd>
+
+<…same layout as Option 1…>
+
+━━━━━━━━━━━━━━━━━━━━
+
+Option 3: <title> — $<price_usd>
+
+<…same layout as Option 1…>
+
+━━━━━━━━━━━━━━━━━━━━
+
+Which one pulls at you — 1, 2, or 3? Or want me to go deeper on any of them first?
 ```
 
-Per-option format (keep it tight, no markdown tables, no asterisk-bold — Telegram renders asterisks literally unless MarkdownV2 is on, which it isn't):
-
-   ```
-   Option N: <title> — $<price_usd>
-
-   <summary in 1–2 sentences>
-
-   Why it fits you: <why_it_fits in 1 sentence>
-
-   What we build: <what_bintra_builds>
-
-   What we need from you: <customer-facing decision summary> (~<customer_effort_hours>h total)
-
-   Delivery: <time_to_product_ready>.
-   First sale realistically: <time_to_first_sale>.
-   ```
+Keep it tight: no markdown tables, no asterisk-bold (Telegram renders asterisks literally unless MarkdownV2 is on, which it isn't).
 
 **Rewriting `what_customer_provides` for delivery** — the raw JSON field may still contain legwork phrasing that slipped past the research rules (e.g. "45 min browsing Etsy," "join 3 Facebook groups and copy 10 questions," "scan top Reddit threads"). **Never parrot those verbatim to the customer.** Every option's "What we need from you" line must describe **decisions and approvals only** — that's the Bintra v1 promise.
 
@@ -69,10 +81,6 @@ Rewrite rule:
 - If the field is genuinely decision-only already → pass it through unchanged.
 - Set `customer_effort_hours` in the delivered text to reflect the rewritten ask. For non-Mini-Course options this should land at ~0.5–1h.
 
-Between Option 1 and Option 2, and again between Option 2 and Option 3, a short pacing beat is fine ("Next one:") but not required. Do NOT re-summarise earlier options — keep it forward-moving.
-
-After all three, send a SEPARATE short prompt as its own message: "Which one pulls at you — 1, 2, or 3? Or want me to go deeper on any of them first?"
-
 Update `MEMORY.md` → "Research status: **delivered**".
 
 **Formatting rules (Telegram-specific):**
@@ -81,7 +89,7 @@ Update `MEMORY.md` → "Research status: **delivered**".
 - Blank lines between ideas are fine and help readability.
 - Don't use code blocks (``` or backticks) around option fields — they look like code to the customer.
 
-### Step 4 — Depth and decision
+### Step 3 — Depth and decision
 
 If they ask for depth on a specific option, answer using only what's in the research file plus general knowledge. Don't invent new facts about market size or competitors.
 
@@ -97,7 +105,7 @@ Confirm their choice with a single message: "Good. Option N it is. I'll kick off
 - **Share a real recommendation when asked — don't dodge.** Refusing to recommend reads as cowardice and violates the co-partner promise. A friend with expertise gives their read; a timid consultant hides behind "your market to live in." Be the friend. When asked "which do you recommend?":
   - **Anchor your pick in THEIR stated constraints** (price band, hours/week, ads budget, persona, any expertise they volunteered). Example: "For you I'd lean Deadline Rescue Prompt Pack — 0.5h effort fits your 1h/week budget best, $27 lands inside your $30 anchor, near-peer uni buyers mean free Reddit distribution."
   - **Label it as your take, not a verdict.** "My read is...", "if I were you I'd lean...", "given what you told me, this is where I'd go." Not "you should pick X" (too pushy), not "it's up to you" (too dodgy).
-  - **Leave room for their final call.** End with: "But you're the one who lives with it — does this sit right, or does another pull at you more?"
+  - **Leave room for their final call.** End with: "But you own the final call — does this sit right, or does another pull at you more?" (Do NOT use "you're the one who lives with it" or "you're the one who runs it" — at Bintra v1, Bintra operates the product and runs the sales motion; the customer funds + approves. Phrasing that implies the customer operates the product is off-brand.)
   - **Update openly if they push back.** "Fair — with that in mind I'd actually flip to Option 2 because..." Don't hedge forever.
   - **After substantive reasoning, use `save_note`.** If you produced a real comparison/analysis (trade-offs across constraints, ICP thinking, distribution logic), persist it: filename `YYYY-MM-DD-option-recommendation-rationale.md`. This compounds for future sessions AND becomes context for the builders downstream — your thinking shouldn't evaporate after one turn.
   - **V1 accountability is preserved:** the customer still owns the final choice — they accept or reject your read. "We made the call together" holds because they made the pick; you just showed up with a genuine opinion instead of a polite refusal.
