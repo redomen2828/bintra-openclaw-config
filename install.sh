@@ -58,6 +58,12 @@ fi
 if [ "$WIPE_STATE" = "1" ]; then
   echo "==> Customer-change state wipe ($WIPE_REASON)"
   systemctl stop openclaw.service 2>/dev/null || true
+  # Also stop/disable the credit-balance watcher — it holds the prior
+  # customer's CUSTOMER_BOT_TOKEN in its unit env, and we don't want it
+  # tailing logs across the customer transition. We re-enable it at the
+  # end of this script with fresh env values.
+  systemctl stop bintra-credit-watcher.service 2>/dev/null || true
+  systemctl disable bintra-credit-watcher.service 2>/dev/null || true
   rm -f "$INSTALL_ROOT/workspace/MEMORY.md" \
         "$INSTALL_ROOT/workspace/IDENTITY.md" \
         "$INSTALL_ROOT/workspace/USER.md" \
@@ -142,8 +148,13 @@ for f in MEMORY.md IDENTITY.md USER.md; do
     cp "$INSTALL_ROOT/.config-repo/workspace/$f" "$INSTALL_ROOT/workspace/$f"
   fi
 done
-# Ensure agent-writable subdirs exist (safe if already present)
-mkdir -p "$INSTALL_ROOT/workspace/memory" "$INSTALL_ROOT/workspace/knowledge"
+# Ensure agent-writable subdirs exist (safe if already present).
+# workspace/state is the rendezvous point for out-of-band watchers:
+# capture-chat-id hook writes primary-chat-id here; credit-balance
+# watcher reads it. Must exist before the Manager takes its first
+# inbound, which is why we mkdir it now rather than letting the hook
+# create it lazily.
+mkdir -p "$INSTALL_ROOT/workspace/memory" "$INSTALL_ROOT/workspace/knowledge" "$INSTALL_ROOT/workspace/state"
 # convothathappened.txt is a dev artifact from the config repo — never ship to customers
 rm -f "$INSTALL_ROOT/workspace/convothathappened.txt"
 
@@ -288,6 +299,58 @@ WantedBy=multi-user.target
 EOF
 chmod 600 /etc/systemd/system/openclaw.service
 
+echo "==> bintra-research-ping watcher service"
+# Long-lived companion that sends a proactive Telegram nudge the moment a
+# research file lands on disk. Same EnvironmentFile so CUSTOMER_BOT_TOKEN is
+# root-only; never logged. See watchers/research-ping/HOOK.md for rationale.
+cat > /etc/systemd/system/bintra-research-ping.service <<EOF
+[Unit]
+Description=Bintra research-ping watcher for customer $CUSTOMER_ID
+After=openclaw.service
+Wants=openclaw.service
+
+[Service]
+Type=simple
+EnvironmentFile=$AUTH_ENV_FILE
+Environment=CUSTOMER_ID=$CUSTOMER_ID
+Environment=CUSTOMER_BOT_TOKEN=$CUSTOMER_BOT_TOKEN
+ExecStart=/usr/bin/node $INSTALL_ROOT/.config-repo/watchers/research-ping/watcher.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 600 /etc/systemd/system/bintra-research-ping.service
+
+echo "==> bintra-credit-watcher service"
+# Tails openclaw.service journal for LLM insufficient-credit errors and
+# sends the customer a single Telegram alert pointing at their provider
+# billing page. See watchers/credit-balance-watcher/HOOK.md for full
+# rationale and security notes. Must be executable; install.sh may run
+# over a fresh clone where the bit wasn't preserved by the rsync.
+chmod +x "$INSTALL_ROOT/.config-repo/watchers/credit-balance-watcher/watcher.sh"
+cat > /etc/systemd/system/bintra-credit-watcher.service <<EOF
+[Unit]
+Description=Bintra credit-balance journal watcher for customer $CUSTOMER_ID
+Requires=openclaw.service
+After=openclaw.service
+
+[Service]
+Type=simple
+Environment=CUSTOMER_BOT_TOKEN=$CUSTOMER_BOT_TOKEN
+Environment=CUSTOMER_LLM_PROVIDER=$CUSTOMER_LLM_PROVIDER
+Environment=CUSTOMER_ID=$CUSTOMER_ID
+Environment=BINTRA_WEBHOOK_SECRET=$CUSTOMER_WEBHOOK_SECRET
+ExecStart=$INSTALL_ROOT/.config-repo/watchers/credit-balance-watcher/watcher.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 600 /etc/systemd/system/bintra-credit-watcher.service
+
 echo "==> bintra-heartbeat timer (5-min cadence, HARDENING 1.13)"
 # The Manager emits heartbeats once per 24h from the agent loop, but 24h is
 # too coarse for outage detection. A systemd timer at 5-min cadence gives the
@@ -323,8 +386,12 @@ chmod 644 /etc/systemd/system/bintra-heartbeat.timer
 systemctl daemon-reload
 systemctl enable openclaw.service
 systemctl enable bintra-heartbeat.timer
+systemctl enable bintra-research-ping.service
+systemctl enable bintra-credit-watcher.service
 systemctl restart openclaw.service
 systemctl restart bintra-heartbeat.timer
+systemctl restart bintra-research-ping.service
+systemctl restart bintra-credit-watcher.service
 
 echo "==> Health"
 sleep 5
