@@ -121,6 +121,9 @@ echo "==> Bintra patches on openclaw"
 if [ -f "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-final-tag.js" ]; then
   node "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-final-tag.js"
 fi
+if [ -f "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-tool-error-warning.js" ]; then
+  node "$INSTALL_ROOT/.config-repo/patches/patch-openclaw-tool-error-warning.js"
+fi
 
 # Copy workspace: refresh everything EXCEPT customer-state files (MEMORY.md,
 # IDENTITY.md, USER.md) that the Manager owns and mutates across sessions. If

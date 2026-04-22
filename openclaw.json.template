@@ -14,6 +14,9 @@
       }
     }
   },
+  "messages": {
+    "suppressToolErrors": true
+  },
   "agents": {
     "defaults": {
       "workspace": "/opt/bintra/workspace",
@@ -30,7 +33,7 @@
         "id": "manager",
         "default": true,
         "workspace": "/opt/bintra/workspace",
-        "skills": ["check_research_results", "deliver_research", "report_to_base"]
+        "skills": ["check_research_results", "deliver_research", "report_to_base", "save_note"]
       }
     ]
   },
