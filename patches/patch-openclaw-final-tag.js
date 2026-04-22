@@ -9,9 +9,47 @@
 // a clear signal to rebase this patch.
 
 const fs = require("node:fs");
+const path = require("node:path");
 
-const target = "/usr/lib/node_modules/openclaw/dist/sanitize-user-facing-text-CQF1CTnZ.js";
+// openclaw's bundler appends a content hash to each chunk, e.g.
+// sanitize-user-facing-text-CMGLMaCD.js. The hash rolls on every upstream
+// release, so hard-coding it breaks the patch on every openclaw upgrade.
+// Discover the chunk by its stable prefix instead — same approach as
+// patch-openclaw-tool-error-warning.js.
+const dir = "/usr/lib/node_modules/openclaw/dist";
 const marker = "// BINTRA_FINAL_TAG_PATCH_V1";
+
+let entries;
+try {
+  entries = fs.readdirSync(dir);
+} catch (err) {
+  console.error(`[patch] cannot list ${dir}: ${err.message}`);
+  process.exit(1);
+}
+
+const candidates = entries.filter(
+  (name) => name.startsWith("sanitize-user-facing-text-") && name.endsWith(".js"),
+);
+
+if (candidates.length === 0) {
+  console.error(
+    "[patch] no sanitize-user-facing-text-*.js found in " +
+      dir +
+      " — openclaw bundle layout changed. Rebase patches/patch-openclaw-final-tag.js.",
+  );
+  process.exit(1);
+}
+
+if (candidates.length > 1) {
+  console.error(
+    "[patch] multiple sanitize-user-facing-text-*.js candidates: " +
+      candidates.join(", ") +
+      ". Refusing to guess.",
+  );
+  process.exit(1);
+}
+
+const target = path.join(dir, candidates[0]);
 
 let src;
 try {
