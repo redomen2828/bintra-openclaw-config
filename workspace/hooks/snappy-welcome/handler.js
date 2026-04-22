@@ -127,6 +127,16 @@ export default async function onMessageReceived(event) {
 		const conversationId = ctx.conversationId;
 		if (!conversationId || typeof conversationId !== "string") return;
 
+		// OpenClaw's Telegram channel delivers conversationId as "telegram:NNN"
+		// where NNN is the numeric chat id. Telegram's sendMessage API needs the
+		// raw integer — passing the full "telegram:NNN" string makes the API
+		// reject the call with HTTP 400 and the customer sees nothing. Extract
+		// the trailing integer. (Same logic as watchers/research-ping/watcher.js
+		// findChatId.)
+		const chatIdMatch = conversationId.match(/(-?\d+)$/);
+		const chatId = chatIdMatch ? chatIdMatch[1] : null;
+		if (!chatId) return;
+
 		const botToken = process.env.CUSTOMER_BOT_TOKEN;
 		if (!botToken) {
 			// Don't log the missing-token as an error with any detail — just bail.
@@ -142,7 +152,7 @@ export default async function onMessageReceived(event) {
 		// return, so that if something is misconfigured we at least see the
 		// single marker log line. The 2s timeout guarantees we never stall the
 		// agent turn.
-		await sendPlaceholder(botToken, conversationId);
+		await sendPlaceholder(botToken, chatId);
 	} catch {
 		// Absolute last-resort swallow. The hook runner already catches, but we
 		// want to guarantee we never surface the token or URL through an
