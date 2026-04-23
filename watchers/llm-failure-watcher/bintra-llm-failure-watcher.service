@@ -1,0 +1,24 @@
+[Unit]
+Description=Bintra LLM-failure fallback watcher
+Requires=openclaw.service
+After=openclaw.service
+
+[Service]
+Type=simple
+# install.sh populates the Environment= lines with this customer's values
+# (CUSTOMER_BOT_TOKEN, CUSTOMER_ID, BINTRA_WEBHOOK_SECRET, optional
+# CUSTOMER_LLM_PROVIDER / CUSTOMER_LLM_MODEL) the same way it does for
+# the credit-balance-watcher unit. Never commit real values here.
+Environment=CUSTOMER_BOT_TOKEN=__CUSTOMER_BOT_TOKEN__
+Environment=CUSTOMER_LLM_PROVIDER=__CUSTOMER_LLM_PROVIDER__
+Environment=CUSTOMER_LLM_MODEL=__CUSTOMER_LLM_MODEL__
+Environment=CUSTOMER_ID=__CUSTOMER_ID__
+Environment=BINTRA_WEBHOOK_SECRET=__BINTRA_WEBHOOK_SECRET__
+ExecStart=/opt/bintra/.config-repo/watchers/llm-failure-watcher/watcher.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
